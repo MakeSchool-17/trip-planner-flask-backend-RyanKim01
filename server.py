@@ -4,7 +4,7 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 from utils.mongo_json_encoder import JSONEncoder
 
-# Basic Setup
+    # Basic Setup
 app = Flask(__name__)
 mongo = MongoClient('localhost', 27017)
 app.db = mongo.develop_database
@@ -23,15 +23,40 @@ class MyObject(Resource):
       return myobject
 
     def get(self, myobject_id):
-      myobject_collection = app.db.myobjects
-      myobject = myobject_collection.find_one({"_id": ObjectId(myobject_id)})
+        myobject_collection = app.db.myobjects
+        myobject = myobject_collection.find_one({"_id": ObjectId(myobject_id)})
 
-      if myobject is None:
-        response = jsonify(data=[])
-        response.status_code = 404
-        return response
-      else:
-        return myobject
+        if myobject is None:
+            response = jsonify(data=[])
+            response.status_code = 404
+            return response
+        else:
+            return myobject
+
+
+# Trip architecture
+class Trip(Resource):
+    def post(self):
+        new_trip = request.json
+        myobject_collection = app.db.trip
+        result = myobject_collection.insert_one(new_trip)
+        trip = myobject_collection.find_one({"_id": ObjectId(result.inserted_id)}
+    return trip
+
+
+    def get(self, myobject_id):
+        myobject_collection = app.db.myobjects
+        myobject = myobject_collection.find_one({"_id": ObjectId(myobject_id)})
+
+        if myobject is None:
+            response = jsonify(data=[])
+            response.status_code = 404
+            return response
+        else:
+            return myobject
+
+
+
 
 # Add REST resource to API
 api.add_resource(MyObject, '/myobject/','/myobject/<string:myobject_id>')
