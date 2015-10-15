@@ -4,15 +4,18 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 from utils.mongo_json_encoder import JSONEncoder
 
-    # Basic Setup
+
+# Basic Setup
 app = Flask(__name__)
 mongo = MongoClient('localhost', 27017)
 app.db = mongo.develop_database
 api = Api(app)
+app.bcrypt_rounds = 12
 
 
 # Trip architecture
 class Trip(Resource):
+    @requires_auth
     def post(self):
         new_trip = request.json
         trip_collection = app.db.trips
@@ -20,6 +23,7 @@ class Trip(Resource):
         posted_trip = trip_collection.find_one({"_id": ObjectId(result.inserted_id)})
         return posted_trip
 
+    @requires_auth
     def get(self, trip_id):
         trip_collection = app.db.trips
         trip = trip_collection.find_one({"_id": ObjectId(trip_id)})
@@ -54,24 +58,42 @@ class Trip(Resource):
         return check_trip
 
 # User architecture
-class User(Resource):
-    def post(self):
-        new_myobject = request.json
-        user = app.db.myobjects
-        result = user.insert_one(new_myobject)
-        myobject = user.find_one({"_id": ObjectId(result.inserted_id)})
-        return myobject
+    class User(Resource):
+        def check_auth(username, password):
+            return username == 'admin' and password == 'secret'
 
 
-    def get(self, myobject_id):
-        user = app.db.myobjects
-        myobject = user.find_one({"_id": ObjectId(myobject_id)})
-        if myobject is None:
-            response = jsonify(data=[])
-            response.status_code = 404
-            return response
-        else:
-            return myobject
+        def requires_auth(f):
+            @wraps(f)
+            def decorated(*args, **kwargs):
+                auth = request.authorization
+                if not auth or not check_auth(auth.username, auth.password):
+                    message = {'error': 'Basic Auth Required.'}
+                    resp = jsonify(message)
+                    resp.status_code = 401
+                    return resp
+
+                return f(*args, **kwargs)
+            return decorated
+
+
+        def post(self):
+            new_user = request.json
+            user_collection = app.db.users
+            result = user_collection.insert_one(new_user)
+            user = user_collection.find_one({"_id": ObjectId(result.inserted_id)})
+            return user
+
+
+        def get(self, myobject_id):
+            user_collection = app.db.myobjects
+            myobject = user.find_one({"_id": ObjectId(myobject_id)})
+            if myobject is None:
+                response = jsonify(data=[])
+                response.status_code = 404
+                return response
+            else:
+                return myobject
 
 
 # Add REST resource to API
