@@ -13,9 +13,30 @@ api = Api(app)
 app.bcrypt_rounds = 12
 
 
+def check_auth(username, password):
+    # userPassword = new_user['password']
+    # hashed_pw = bcrypt.hashpw(userPassword, bcrypt.gensalt(app.bcrypt_rounds))
+    # new_user['password'] = hashed_pw
+    return username == 'admin' and password == 'secret'
+
+
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth or not check_auth(auth.username, auth.password):
+            message = {'error': 'Basic Auth Required.'}
+            resp = jsonify(message)
+            resp.status_code = 401
+            return resp
+
+        return f(*args, **kwargs)
+    return decorated
+
+
 # Trip architecture
 class Trip(Resource):
-    @requires_auth
+    # @requires_auth
     def post(self):
         new_trip = request.json
         trip_collection = app.db.trips
@@ -23,7 +44,7 @@ class Trip(Resource):
         posted_trip = trip_collection.find_one({"_id": ObjectId(result.inserted_id)})
         return posted_trip
 
-    @requires_auth
+    # @requires_auth
     def get(self, trip_id):
         trip_collection = app.db.trips
         trip = trip_collection.find_one({"_id": ObjectId(trip_id)})
@@ -57,43 +78,26 @@ class Trip(Resource):
         check_trip = trip_collection.find_one({"_id": ObjectId(trip_id)})
         return check_trip
 
+
 # User architecture
-    class User(Resource):
-        def check_auth(username, password):
-            return username == 'admin' and password == 'secret'
+class User(Resource):
 
+    def post(self):
+        new_user = request.json
+        user_collection = app.db.users
+        result = user_collection.insert_one(new_user)
+        user = user_collection.find_one({"_id": ObjectId(result.inserted_id)})
+        return user
 
-        def requires_auth(f):
-            @wraps(f)
-            def decorated(*args, **kwargs):
-                auth = request.authorization
-                if not auth or not check_auth(auth.username, auth.password):
-                    message = {'error': 'Basic Auth Required.'}
-                    resp = jsonify(message)
-                    resp.status_code = 401
-                    return resp
-
-                return f(*args, **kwargs)
-            return decorated
-
-
-        def post(self):
-            new_user = request.json
-            user_collection = app.db.users
-            result = user_collection.insert_one(new_user)
-            user = user_collection.find_one({"_id": ObjectId(result.inserted_id)})
-            return user
-
-
-        def get(self, myobject_id):
-            user_collection = app.db.myobjects
-            myobject = user.find_one({"_id": ObjectId(myobject_id)})
-            if myobject is None:
-                response = jsonify(data=[])
-                response.status_code = 404
-                return response
-            else:
-                return myobject
+    def get(self, myobject_id):
+        user_collection = app.db.myobjects
+        myobject = user.find_one({"_id": ObjectId(myobject_id)})
+        if myobject is None:
+            response = jsonify(data=[])
+            response.status_code = 404
+            return response
+        else:
+            return myobject
 
 
 # Add REST resource to API
