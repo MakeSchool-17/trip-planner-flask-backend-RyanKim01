@@ -10,52 +10,68 @@ mongo = MongoClient('localhost', 27017)
 app.db = mongo.develop_database
 api = Api(app)
 
-#Implement REST Resource
-class MyObject(Resource):
-
-    def post(self):
-      new_myobject = request.json
-      myobject_collection = app.db.myobjects
-      result = myobject_collection.insert_one(request.json)
-
-      myobject = myobject_collection.find_one({"_id": ObjectId(result.inserted_id)})
-
-      return myobject
-
-    def get(self, myobject_id):
-        myobject_collection = app.db.myobjects
-        myobject = myobject_collection.find_one({"_id": ObjectId(myobject_id)})
-
-        if myobject is None:
-            response = jsonify(data=[])
-            response.status_code = 404
-            return response
-        else:
-            return myobject
-
 
 # Trip architecture
 class Trip(Resource):
     def post(self):
         new_trip = request.json
-        myobject_collection = app.db.trip
-        result = myobject_collection.insert_one(new_trip)
-        trip = myobject_collection.find_one({"_id": ObjectId(result.inserted_id)}
-    return trip
+        trip_collection = app.db.trips
+        result = trip_collection.insert_one(new_trip)
+        posted_trip = trip_collection.find_one({"_id": ObjectId(result.inserted_id)})
+        return posted_trip
+
+    def get(self, trip_id):
+        trip_collection = app.db.trips
+        trip = trip_collection.find_one({"_id": ObjectId(trip_id)})
+        if trip is None:
+            response = jsonify(data=[])
+            response.status_code = 404
+            return response
+        else:
+            return trip
+
+
+    def delete(self, trip_id):
+        trip_collection = app.db.trips
+        result = trip_collection.delete_one(myobject_id)
+        deleted_trip = trip_collection.find_one({"_id": ObjectId(trip_id)})
+        if deleted_trip is not None:
+            response = jsonify(data=[])
+            response.status_code = 404
+            return response
+        else:
+            return deleted_trip
+
+
+    def put(self, trip_id):
+        updated_trip = request.json
+        trip_collection = app.db.trips
+        # which function should I use to set/update the trip
+
+        result = trip_collection.update_one({"_id": ObjectId(trip_id)},
+                                            {'$set': updated_trip})
+        check_trip = trip_collection.find_one({"_id": ObjectId(trip_id)})
+        return check_trip
+
+# User architecture
+class User(Resource):
+    def post(self):
+        new_myobject = request.json
+        user = app.db.myobjects
+        result = user.insert_one(new_myobject)
+        myobject = user.find_one({"_id": ObjectId(result.inserted_id)})
+        return myobject
 
 
     def get(self, myobject_id):
-        myobject_collection = app.db.myobjects
-        myobject = myobject_collection.find_one({"_id": ObjectId(myobject_id)})
-
+        user = app.db.myobjects
+        myobject = user.find_one({"_id": ObjectId(myobject_id)})
         if myobject is None:
             response = jsonify(data=[])
             response.status_code = 404
             return response
         else:
             return myobject
-
-
 
 
 # Add REST resource to API
