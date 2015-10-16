@@ -15,7 +15,8 @@ app.bcrypt_rounds = 12
 
 def check_auth(username, password):
     # userPassword = new_user['password']
-    # hashed_pw = bcrypt.hashpw(userPassword, bcrypt.gensalt(app.bcrypt_rounds))
+    # hashed_pw = bcrypt.hashpw(userPassword,
+    #                           bcrypt.gensalt(app.bcrypt_rounds))
     # new_user['password'] = hashed_pw
     return username == 'admin' and password == 'secret'
 
@@ -41,7 +42,8 @@ class Trip(Resource):
         new_trip = request.json
         trip_collection = app.db.trips
         result = trip_collection.insert_one(new_trip)
-        posted_trip = trip_collection.find_one({"_id": ObjectId(result.inserted_id)})
+        posted_trip = trip_collection.find_one({"_id":
+                                                ObjectId(result.inserted_id)})
         return posted_trip
 
     # @requires_auth
@@ -49,24 +51,22 @@ class Trip(Resource):
         trip_collection = app.db.trips
         trip = trip_collection.find_one({"_id": ObjectId(trip_id)})
         if trip is None:
-            response = jsonify(data=[])
+            response = jsonify(data=trip)
             response.status_code = 404
             return response
         else:
             return trip
 
-
     def delete(self, trip_id):
         trip_collection = app.db.trips
-        result = trip_collection.delete_one(myobject_id)
+        trip_collection.delete_one({"_id": ObjectId(trip_id)})
         deleted_trip = trip_collection.find_one({"_id": ObjectId(trip_id)})
         if deleted_trip is not None:
-            response = jsonify(data=[])
+            response = jsonify(data=deleted_trip)
             response.status_code = 404
             return response
         else:
             return deleted_trip
-
 
     def put(self, trip_id):
         updated_trip = request.json
@@ -101,7 +101,9 @@ class User(Resource):
 
 
 # Add REST resource to API
-api.add_resource(MyObject, '/myobject/','/myobject/<string:myobject_id>')
+api.add_resource(Trip, '/trips/', '/trips/<string:trip_id>')
+api.add_resource(User, '/users/', '/users/<string:user_id>')
+
 
 # provide a custom JSON serializer for flaks_restful
 @api.representation('application/json')
@@ -110,7 +112,9 @@ def output_json(data, code, headers=None):
     resp.headers.extend(headers or {})
     return resp
 
+
 if __name__ == '__main__':
-    # Turn this on in debug mode to get detailled information about request related exceptions: http://flask.pocoo.org/docs/0.10/config/
+    # Turn this on in debug mode to get detailled information about
+    # request related exceptions: http://flask.pocoo.org/docs/0.10/config/
     app.config['TRAP_BAD_REQUEST_ERRORS'] = True
     app.run(debug=True)
