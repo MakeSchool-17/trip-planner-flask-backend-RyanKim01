@@ -1,6 +1,7 @@
 import server
 import unittest
 import json
+import bcrypt
 from pymongo import MongoClient
 
 
@@ -21,33 +22,34 @@ class FlaskrTestCase(unittest.TestCase):
         db.drop_collection('users')
 
     # User tests
-    # def test_posting_user(self):
-    #     response = self.app.post('/users/', data=json.dumps(dict(
-    #                              name="ryankim", password="1234")),
-    #                              content_type='application/json')
-    #     responseJSON = json.loads(response.data.decode())
-    #
-    #     self.assertEqual(response.status_code, 200)
-    #     assert 'application/json' in response.content_type
-    #     assert 'A object' in responseJSON["name"]
-    #
-    # def test_getting_user(self):
-    #     response = self.app.post('/user/',
-    #                              data=json.dumps(dict(name="Another object"))
-    #                              ,content_type='application/json')
-    #
-    #     postResponseJSON = json.loads(response.data.decode())
-    #     postedObjectID = postResponseJSON["_id"]
-    #
-    #     response = self.app.get('/user/'+postedObjectID)
-    #     responseJSON = json.loads(response.data.decode())
-    #
-    #     self.assertEqual(response.status_code, 200)
-    #     assert 'Another object' in responseJSON["name"]
-    #
-    # def test_getting_non_existent_object(self):
-    #     response = self.app.get('/user/55f0cbb4236f44b7f0e3cb23')
-    #     self.assertEqual(response.status_code, 404)
+    def test_posting_user(self):
+        response = self.app.post('/users/', data=json.dumps(dict(
+                                 name="ryankim", password="12341234")),
+                                 content_type='application/json')
+        responseJSON = json.loads(response.data.decode())
+
+        self.assertEqual(response.status_code, 200)
+
+        assert 'application/json' in response.content_type
+        assert 'ryankim' in responseJSON["name"]
+
+    def test_getting_user(self):
+        response = self.app.post('/users/',
+                                 data=json.dumps(dict(name="ryankim")),
+                                 content_type='application/json')
+
+        postResponseJSON = json.loads(response.data.decode())
+        postedObjectID = postResponseJSON["_id"]
+
+        response = self.app.get('/users/'+postedObjectID)
+        responseJSON = json.loads(response.data.decode())
+
+        self.assertEqual(response.status_code, 200)
+        assert 'Another object' in responseJSON["name"]
+
+    def test_getting_non_existent_object(self):
+        response = self.app.get('/user/55f0cbb4236f44b7f0e3cb23')
+        self.assertEqual(response.status_code, 404)
 
 # Trip tests
     def test_getting_trip(self):

@@ -1,6 +1,7 @@
 from flask import Flask, request, make_response, jsonify
 from flask_restful import Resource, Api
 from pymongo import MongoClient
+import bcrypt
 from bson.objectid import ObjectId
 from utils.mongo_json_encoder import JSONEncoder
 
@@ -37,7 +38,7 @@ def requires_auth(f):
 
 # Trip architecture
 class Trip(Resource):
-    # @requires_auth
+    @requires_auth
     def post(self):
         new_trip = request.json
         trip_collection = app.db.trips
@@ -46,7 +47,7 @@ class Trip(Resource):
                                                 ObjectId(result.inserted_id)})
         return posted_trip
 
-    # @requires_auth
+    @requires_auth
     def get(self, trip_id):
         trip_collection = app.db.trips
         trip = trip_collection.find_one({"_id": ObjectId(trip_id)})
@@ -85,15 +86,19 @@ class User(Resource):
     def post(self):
         new_user = request.json
         user_collection = app.db.users
+        hashed_pw = bcrypt.hashpw(new_user["password"], bcrypt.gensalt())
         result = user_collection.insert_one(new_user)
         user = user_collection.find_one({"_id": ObjectId(result.inserted_id)})
+        if bcrypt.hashpw(responseJSON["password"], hashed_pw) == hashed_pw:
+            return true
+
         return user
 
     def get(self, myobject_id):
         user_collection = app.db.myobjects
-        myobject = user.find_one({"_id": ObjectId(myobject_id)})
+        myobject = user_collection.find_one({"_id": ObjectId(myobject_id)})
         if myobject is None:
-            response = jsonify(data=[])
+            response = jsonify(data=myobject)
             response.status_code = 404
             return response
         else:
