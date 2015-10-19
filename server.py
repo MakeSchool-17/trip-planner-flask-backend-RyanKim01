@@ -47,6 +47,8 @@ class Trip(Resource):
                                                 ObjectId(result.inserted_id)})
         return posted_trip
 
+    # [Ben-G] You still need to implement the "get all trips" functionality.
+    # All trips should be returned when /trips/ is called
     @requires_auth
     def get(self, trip_id):
         trip_collection = app.db.trips
@@ -58,6 +60,9 @@ class Trip(Resource):
         else:
             return trip
 
+    # [Ben-G] Instead of refetching the trip, you can use the
+    # result from `delete_one` to verify that the deletion was
+    # successful
     def delete(self, trip_id):
         trip_collection = app.db.trips
         trip_collection.delete_one({"_id": ObjectId(trip_id)})
@@ -94,6 +99,7 @@ class User(Resource):
 
         return user
 
+    # [Ben-G] This endpoint should require authentication
     def get(self, myobject_id):
         user_collection = app.db.myobjects
         myobject = user_collection.find_one({"_id": ObjectId(myobject_id)})
