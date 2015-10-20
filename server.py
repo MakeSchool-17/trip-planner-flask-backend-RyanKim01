@@ -35,7 +35,6 @@ def requires_auth(f):
             resp = jsonify(message)
             resp.status_code = 401
             return resp
-
         return f(*args, **kwargs)
     return decorated
 
@@ -81,13 +80,13 @@ class Trip(Resource):
                                                 ObjectId(result.inserted_id)})
         return posted_trip
 
-<<<<<<< HEAD
+# <<<<<<< HEAD
     # @requires_auth
-=======
+# =======
     # [Ben-G] You still need to implement the "get all trips" functionality.
     # All trips should be returned when /trips/ is called
     @requires_auth
->>>>>>> 8bce11cb116352c1cfe02dadd593591b6f470567
+# >>>>>>> 8bce11cb116352c1cfe02dadd593591b6f470567
     def get(self, trip_id):
         trip_collection = app.db.trips
         trip = trip_collection.find_one({"_id": ObjectId(trip_id)})
@@ -122,8 +121,8 @@ class Trip(Resource):
         check_trip = trip_collection.find_one({"_id": ObjectId(trip_id)})
         return check_trip
 
-<<<<<<< HEAD
-=======
+# <<<<<<< HEAD
+# =======
 
 # User architecture
 class User(Resource):
@@ -151,7 +150,7 @@ class User(Resource):
             return myobject
 
 
->>>>>>> 8bce11cb116352c1cfe02dadd593591b6f470567
+# >>>>>>> 8bce11cb116352c1cfe02dadd593591b6f470567
 # Add REST resource to API
 api.add_resource(User, '/users/', '/users/<string:user_id>')
 api.add_resource(Trip, '/trips/', '/trips/<string:trip_id>')

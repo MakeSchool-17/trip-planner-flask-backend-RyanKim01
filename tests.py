@@ -46,7 +46,7 @@ class FlaskrTestCase(unittest.TestCase):
         assert 'ryankim' in responseJSON["name"]
 
     def test_getting_user(self):
-        # [Ben-G] You should be passing the username as part of the 
+        # [Ben-G] You should be passing the username as part of the
         # authentication header instead of as part of the request body
         response = self.app.post('/users/',
                                  data=json.dumps(dict(name="ryankim",
@@ -82,9 +82,9 @@ class FlaskrTestCase(unittest.TestCase):
         assert 'Trip to SF' in responseJSON["name"]
 
     # [Ben-G] This test is a duplicate of test above
-    def test_getting_non_existent_trip(self):
-        response = self.app.get('/trips/55f0cbb4236f44b7f0e3cb23')
-        self.assertEqual(response.status_code, 404)
+    # def test_getting_non_existent_trip(self):
+    #     response = self.app.get('/trips/55f0cbb4236f44b7f0e3cb23')
+    #     self.assertEqual(response.status_code, 404)
 
     def test_posting_trip(self):
         response = self.app.post('/trips/', data=json.dumps(dict(
