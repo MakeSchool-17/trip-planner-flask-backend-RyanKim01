@@ -46,6 +46,8 @@ class FlaskrTestCase(unittest.TestCase):
         assert 'ryankim' in responseJSON["name"]
 
     def test_getting_user(self):
+        # [Ben-G] You should be passing the username as part of the 
+        # authentication header instead of as part of the request body
         response = self.app.post('/users/',
                                  data=json.dumps(dict(name="ryankim",
                                  password="12341234")),
@@ -79,6 +81,7 @@ class FlaskrTestCase(unittest.TestCase):
         assert 'application/json' in response.content_type
         assert 'Trip to SF' in responseJSON["name"]
 
+    # [Ben-G] This test is a duplicate of test above
     def test_getting_non_existent_trip(self):
         response = self.app.get('/trips/55f0cbb4236f44b7f0e3cb23')
         self.assertEqual(response.status_code, 404)
@@ -112,6 +115,8 @@ class FlaskrTestCase(unittest.TestCase):
         assert 'application/json' in response.content_type
         assert 'Trip to Seattle' in responseJSON["name"]
 
+    # [Ben-G] For deleting its sufficient to pass the ID of the trip you
+    # want to delete. You don't need to provide a body.
     def test_deleting_trip(self):
         response = self.app.post('/trips/', data=json.dumps(dict(
                                  name="Trip to SF")),

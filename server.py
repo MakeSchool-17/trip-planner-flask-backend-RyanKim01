@@ -81,7 +81,13 @@ class Trip(Resource):
                                                 ObjectId(result.inserted_id)})
         return posted_trip
 
+<<<<<<< HEAD
     # @requires_auth
+=======
+    # [Ben-G] You still need to implement the "get all trips" functionality.
+    # All trips should be returned when /trips/ is called
+    @requires_auth
+>>>>>>> 8bce11cb116352c1cfe02dadd593591b6f470567
     def get(self, trip_id):
         trip_collection = app.db.trips
         trip = trip_collection.find_one({"_id": ObjectId(trip_id)})
@@ -92,6 +98,9 @@ class Trip(Resource):
         else:
             return trip
 
+    # [Ben-G] Instead of refetching the trip, you can use the
+    # result from `delete_one` to verify that the deletion was
+    # successful
     def delete(self, trip_id):
         trip_collection = app.db.trips
         trip_collection.delete_one({"_id": ObjectId(trip_id)})
@@ -113,6 +122,36 @@ class Trip(Resource):
         check_trip = trip_collection.find_one({"_id": ObjectId(trip_id)})
         return check_trip
 
+<<<<<<< HEAD
+=======
+
+# User architecture
+class User(Resource):
+
+    def post(self):
+        new_user = request.json
+        user_collection = app.db.users
+        hashed_pw = bcrypt.hashpw(new_user["password"], bcrypt.gensalt())
+        result = user_collection.insert_one(new_user)
+        user = user_collection.find_one({"_id": ObjectId(result.inserted_id)})
+        if bcrypt.hashpw(responseJSON["password"], hashed_pw) == hashed_pw:
+            return true
+
+        return user
+
+    # [Ben-G] This endpoint should require authentication
+    def get(self, myobject_id):
+        user_collection = app.db.myobjects
+        myobject = user_collection.find_one({"_id": ObjectId(myobject_id)})
+        if myobject is None:
+            response = jsonify(data=myobject)
+            response.status_code = 404
+            return response
+        else:
+            return myobject
+
+
+>>>>>>> 8bce11cb116352c1cfe02dadd593591b6f470567
 # Add REST resource to API
 api.add_resource(User, '/users/', '/users/<string:user_id>')
 api.add_resource(Trip, '/trips/', '/trips/<string:trip_id>')
