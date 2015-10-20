@@ -2,7 +2,20 @@ import server
 import unittest
 import json
 import bcrypt
+import base64
 from pymongo import MongoClient
+
+
+def make_auth_header(username="ryankim", password="12341234"):
+    string = username + ":" + password
+    encoded_base64 = base64.b64encode(string.encode("utf-8"))
+    decoded_base64 = encoded_base64.decode("utf-8")
+
+    auth_header = "Authorization: Basic " + decoded_base64
+    return auth_header
+
+headers = {"content-type": "application/json",
+           "Authentication": make_auth_header()}
 
 
 class FlaskrTestCase(unittest.TestCase):
@@ -29,15 +42,14 @@ class FlaskrTestCase(unittest.TestCase):
         responseJSON = json.loads(response.data.decode())
 
         self.assertEqual(response.status_code, 200)
-
         assert 'application/json' in response.content_type
         assert 'ryankim' in responseJSON["name"]
 
     def test_getting_user(self):
         response = self.app.post('/users/',
-                                 data=json.dumps(dict(name="ryankim")),
-                                 content_type='application/json')
-
+                                 data=json.dumps(dict(name="ryankim",
+                                 password="12341234")),
+                                 headers=headers)
         postResponseJSON = json.loads(response.data.decode())
         postedObjectID = postResponseJSON["_id"]
 

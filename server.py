@@ -2,6 +2,7 @@ from flask import Flask, request, make_response, jsonify
 from flask_restful import Resource, Api
 from pymongo import MongoClient
 import bcrypt
+import base64
 from bson.objectid import ObjectId
 from utils.mongo_json_encoder import JSONEncoder
 
@@ -15,11 +16,14 @@ app.bcrypt_rounds = 12
 
 
 def check_auth(username, password):
-    # userPassword = new_user['password']
-    # hashed_pw = bcrypt.hashpw(userPassword,
-    #                           bcrypt.gensalt(app.bcrypt_rounds))
-    # new_user['password'] = hashed_pw
-    return username == 'admin' and password == 'secret'
+    user_collection = app.db.myobjects
+    user = user_collection.find_one({"username": username})
+    if user is None:
+        return False
+    stored_pw = user["password"]
+    encoded_pw = password.encode("utf-8")
+    hashed_pw = bcrypt.hashpw(encoded_pw, stored_pw)
+    return stored_pw == hashed_pw
 
 
 def requires_auth(f):
@@ -36,9 +40,39 @@ def requires_auth(f):
     return decorated
 
 
+# User architecture
+class User(Resource):
+
+    def post(self):
+        new_user = request.json
+        user_collection = app.db.users
+        # user = user_collection.find_one({"name": new_user["name"]})
+        # if user is None:
+        encoded_pw = new_user["password"].encode('utf-8')
+        hashed_pw = bcrypt.hashpw(encoded_pw,
+                                  bcrypt.gensalt(app.bcrypt_rounds))
+        new_user["password"] = hashed_pw
+        result = user_collection.insert_one(new_user)
+        user = user_collection.find_one({"_id":
+                                        ObjectId(result.inserted_id)})
+
+        del user["password"]
+        return user
+
+    def get(self, user_id):
+        user_collection = app.db.myobjects
+        user = user_collection.find_one({"_id": ObjectId(user_id)})
+        if user is None:
+            response = jsonify(data=user)
+            response.status_code = 404
+            return response
+        else:
+            return user
+
+
 # Trip architecture
 class Trip(Resource):
-    @requires_auth
+    # @requires_auth
     def post(self):
         new_trip = request.json
         trip_collection = app.db.trips
@@ -47,7 +81,7 @@ class Trip(Resource):
                                                 ObjectId(result.inserted_id)})
         return posted_trip
 
-    @requires_auth
+    # @requires_auth
     def get(self, trip_id):
         trip_collection = app.db.trips
         trip = trip_collection.find_one({"_id": ObjectId(trip_id)})
@@ -79,35 +113,9 @@ class Trip(Resource):
         check_trip = trip_collection.find_one({"_id": ObjectId(trip_id)})
         return check_trip
 
-
-# User architecture
-class User(Resource):
-
-    def post(self):
-        new_user = request.json
-        user_collection = app.db.users
-        hashed_pw = bcrypt.hashpw(new_user["password"], bcrypt.gensalt())
-        result = user_collection.insert_one(new_user)
-        user = user_collection.find_one({"_id": ObjectId(result.inserted_id)})
-        if bcrypt.hashpw(responseJSON["password"], hashed_pw) == hashed_pw:
-            return true
-
-        return user
-
-    def get(self, myobject_id):
-        user_collection = app.db.myobjects
-        myobject = user_collection.find_one({"_id": ObjectId(myobject_id)})
-        if myobject is None:
-            response = jsonify(data=myobject)
-            response.status_code = 404
-            return response
-        else:
-            return myobject
-
-
 # Add REST resource to API
-api.add_resource(Trip, '/trips/', '/trips/<string:trip_id>')
 api.add_resource(User, '/users/', '/users/<string:user_id>')
+api.add_resource(Trip, '/trips/', '/trips/<string:trip_id>')
 
 
 # provide a custom JSON serializer for flaks_restful
