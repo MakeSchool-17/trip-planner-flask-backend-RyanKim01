@@ -10,12 +10,14 @@ def make_auth_header(username="ryankim", password="12341234"):
     string = username + ":" + password
     encoded_base64 = base64.b64encode(string.encode("utf-8"))
     decoded_base64 = encoded_base64.decode("utf-8")
-
-    auth_header = "Authorization: Basic " + decoded_base64
+    auth_header = {"Authorization": "Basic " + decoded_base64}
     return auth_header
 
-headers = {"content-type": "application/json",
-           "Authentication": make_auth_header()}
+
+def make_headers():
+    headers = make_auth_header()
+    headers["Content-Type"] = "application/json"
+    return headers
 
 
 class FlaskrTestCase(unittest.TestCase):
@@ -35,7 +37,7 @@ class FlaskrTestCase(unittest.TestCase):
         db.drop_collection('users')
 
     # User tests
-    def test_posting_user(self):
+    def test_post_user(self):
         response = self.app.post('/users/', data=json.dumps(dict(
                                  name="ryankim", password="12341234")),
                                  content_type='application/json')
@@ -45,13 +47,14 @@ class FlaskrTestCase(unittest.TestCase):
         assert 'application/json' in response.content_type
         assert 'ryankim' in responseJSON["name"]
 
-    def test_getting_user(self):
-        # [Ben-G] You should be passing the username as part of the
-        # authentication header instead of as part of the request body
+    def test_get_user(self):
+
         response = self.app.post('/users/',
-                                 data=json.dumps(dict(name="ryankim",
-                                 password="12341234")),
-                                 headers=headers)
+                                 data=json.dumps(dict(
+                                 name="ryankim", password="12341234")),
+                                 content_type='application/json'
+                                 )
+
         postResponseJSON = json.loads(response.data.decode())
         postedObjectID = postResponseJSON["_id"]
 
@@ -59,17 +62,18 @@ class FlaskrTestCase(unittest.TestCase):
         responseJSON = json.loads(response.data.decode())
 
         self.assertEqual(response.status_code, 200)
-        assert 'Another object' in responseJSON["name"]
+        assert 'ryankim' in responseJSON["name"]
+        assert 'application/json' in response.content_type
 
-    def test_getting_non_existent_object(self):
+    def test_get_non_existent_object(self):
         response = self.app.get('/user/55f0cbb4236f44b7f0e3cb23')
         self.assertEqual(response.status_code, 404)
 
 # Trip tests
-    def test_getting_trip(self):
+    def test_get_trip(self):
         response = self.app.post('/trips/', data=json.dumps(dict(
                                  name="Trip to SF")),
-                                 content_type='application/json')
+                                 headers=make_headers())
 
         postResponseJSON = json.loads(response.data.decode())
         postedObjectID = postResponseJSON["_id"]
@@ -81,15 +85,20 @@ class FlaskrTestCase(unittest.TestCase):
         assert 'application/json' in response.content_type
         assert 'Trip to SF' in responseJSON["name"]
 
+    # def test_getting_all_trips(self):
+
+
+
+
     # [Ben-G] This test is a duplicate of test above
     # def test_getting_non_existent_trip(self):
     #     response = self.app.get('/trips/55f0cbb4236f44b7f0e3cb23')
     #     self.assertEqual(response.status_code, 404)
 
-    def test_posting_trip(self):
-        response = self.app.post('/trips/', data=json.dumps(dict(
-                                 name="New Trip")),
-                                 content_type='application/json')
+    def test_post_trip(self):
+        response = self.app.post('/trips/',
+                                 data=json.dumps(dict(name="New Trip")),
+                                 headers=make_headers())
 
         responseJSON = json.loads(response.data.decode())
 
@@ -97,10 +106,10 @@ class FlaskrTestCase(unittest.TestCase):
         assert 'application/json' in response.content_type
         assert 'New Trip' in responseJSON["name"]
 
-    def test_putting_trip(self):
+    def test_put_trip(self):
         response = self.app.post('/trips/', data=json.dumps(dict(
                                  name="Trip to SF", waypoint=["LA", "SJ"])),
-                                 content_type='application/json')
+                                 headers=make_headers())
 
         postResponseJSON = json.loads(response.data.decode())
         postedObjectID = postResponseJSON["_id"]
@@ -115,12 +124,10 @@ class FlaskrTestCase(unittest.TestCase):
         assert 'application/json' in response.content_type
         assert 'Trip to Seattle' in responseJSON["name"]
 
-    # [Ben-G] For deleting its sufficient to pass the ID of the trip you
-    # want to delete. You don't need to provide a body.
-    def test_deleting_trip(self):
+    def test_delete_trip(self):
         response = self.app.post('/trips/', data=json.dumps(dict(
                                  name="Trip to SF")),
-                                 content_type='application/json')
+                                 headers=make_headers())
 
         postResponseJSON = json.loads(response.data.decode())
         postedObjectID = postResponseJSON["_id"]

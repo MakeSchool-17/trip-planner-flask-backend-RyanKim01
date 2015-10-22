@@ -1,8 +1,8 @@
 from flask import Flask, request, make_response, jsonify
 from flask_restful import Resource, Api
 from pymongo import MongoClient
+from functools import wraps
 import bcrypt
-import base64
 from bson.objectid import ObjectId
 from utils.mongo_json_encoder import JSONEncoder
 
@@ -59,7 +59,7 @@ class User(Resource):
         return user
 
     def get(self, user_id):
-        user_collection = app.db.myobjects
+        user_collection = app.db.users
         user = user_collection.find_one({"_id": ObjectId(user_id)})
         if user is None:
             response = jsonify(data=user)
@@ -71,7 +71,7 @@ class User(Resource):
 
 # Trip architecture
 class Trip(Resource):
-    # @requires_auth
+
     def post(self):
         new_trip = request.json
         trip_collection = app.db.trips
@@ -80,13 +80,9 @@ class Trip(Resource):
                                                 ObjectId(result.inserted_id)})
         return posted_trip
 
-# <<<<<<< HEAD
-    # @requires_auth
-# =======
     # [Ben-G] You still need to implement the "get all trips" functionality.
     # All trips should be returned when /trips/ is called
-    @requires_auth
-# >>>>>>> 8bce11cb116352c1cfe02dadd593591b6f470567
+    # @requires_auth
     def get(self, trip_id):
         trip_collection = app.db.trips
         trip = trip_collection.find_one({"_id": ObjectId(trip_id)})
@@ -96,6 +92,24 @@ class Trip(Resource):
             return response
         else:
             return trip
+
+    def get_all_trips_for_specific_users(self):
+        trip_collection = app.db.trips
+        user_collection = app.db.users
+        # get username from authorization header
+        username = request.headers.get('Authorization').username
+        # find user object from db with that username
+        user = user_collection.find_one({"username": username})
+        # get user's id
+        user_id = user['_id']
+        # look up trips associated with that user id
+        trips = trip_collection.find({"_id": ObjectId(user_id)})
+        if trips is None:
+            response = jsonify(data=trips)
+            response.status_code = 404
+            return response
+        else:
+            return trips
 
     # [Ben-G] Instead of refetching the trip, you can use the
     # result from `delete_one` to verify that the deletion was
@@ -121,24 +135,22 @@ class Trip(Resource):
         check_trip = trip_collection.find_one({"_id": ObjectId(trip_id)})
         return check_trip
 
-# <<<<<<< HEAD
-# =======
 
 # User architecture
 class User(Resource):
-
     def post(self):
         new_user = request.json
         user_collection = app.db.users
-        hashed_pw = bcrypt.hashpw(new_user["password"], bcrypt.gensalt())
+        encoded_pw = new_user["password"].encode("utf-8")
+        hashed_pw = bcrypt.hashpw(encoded_pw, bcrypt.gensalt())
         result = user_collection.insert_one(new_user)
         user = user_collection.find_one({"_id": ObjectId(result.inserted_id)})
-        if bcrypt.hashpw(responseJSON["password"], hashed_pw) == hashed_pw:
-            return true
+        # if bcrypt.hashpw(responseJSON["password"], hashed_pw) == hashed_pw:
+        #     return true
 
         return user
 
-    # [Ben-G] This endpoint should require authentication
+    @requires_auth
     def get(self, myobject_id):
         user_collection = app.db.myobjects
         myobject = user_collection.find_one({"_id": ObjectId(myobject_id)})
@@ -150,7 +162,6 @@ class User(Resource):
             return myobject
 
 
-# >>>>>>> 8bce11cb116352c1cfe02dadd593591b6f470567
 # Add REST resource to API
 api.add_resource(User, '/users/', '/users/<string:user_id>')
 api.add_resource(Trip, '/trips/', '/trips/<string:trip_id>')
