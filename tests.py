@@ -8,6 +8,7 @@ from pymongo import MongoClient
 
 def make_auth_header(username="ryankim", password="12341234"):
     string = username + ":" + password
+    # import pdb; pdb.set_trace()
     encoded_base64 = base64.b64encode(string.encode("utf-8"))
     decoded_base64 = encoded_base64.decode("utf-8")
     auth_header = {"Authorization": "Basic " + decoded_base64}
@@ -46,96 +47,116 @@ class FlaskrTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         assert 'application/json' in response.content_type
         assert 'ryankim' in responseJSON["name"]
-
-    def test_get_user(self):
-
-        response = self.app.post('/users/',
-                                 data=json.dumps(dict(
-                                 name="ryankim", password="12341234")),
-                                 content_type='application/json'
-                                 )
-
-        postResponseJSON = json.loads(response.data.decode())
-        postedObjectID = postResponseJSON["_id"]
-
-        response = self.app.get('/users/'+postedObjectID)
-        responseJSON = json.loads(response.data.decode())
-
-        self.assertEqual(response.status_code, 200)
-        assert 'ryankim' in responseJSON["name"]
-        assert 'application/json' in response.content_type
-
-    def test_get_non_existent_object(self):
-        response = self.app.get('/user/55f0cbb4236f44b7f0e3cb23')
-        self.assertEqual(response.status_code, 404)
+    #
+    # def test_get_user(self):
+    #
+    #     response = self.app.post('/users/',
+    #                              data=json.dumps(dict(
+    #                              name="ryankim", password="12341234")),
+    #                              content_type='application/json'
+    #                              )
+    #
+    #     postResponseJSON = json.loads(response.data.decode())
+    #     postedObjectID = postResponseJSON["_id"]
+    #
+    #     response = self.app.get('/users/'+postedObjectID,
+    #                             headers=make_headers())
+    #     responseJSON = json.loads(response.data.decode())
+    #
+    #     self.assertEqual(response.status_code, 200)
+    #     assert 'ryankim' in responseJSON["name"]
+    #     assert 'application/json' in response.content_type
+    #
+    # def test_get_non_existent_user(self):
+    #     response = self.app.get('/users/55f0cbb4236f44b7f0e3cb23',
+    #                             headers=make_headers())
+    #     self.assertEqual(response.status_code, 404)
 
 # Trip tests
-    def test_get_trip(self):
-        response = self.app.post('/trips/', data=json.dumps(dict(
-                                 name="Trip to SF")),
-                                 headers=make_headers())
+    # def test_post_trip(self):
+    #     response = self.app.post('/trips/',
+    #                              data=json.dumps(dict(name="New Trip",
+    #                              waypoints=["LA", "San Francisco"])),
+    #                              headers=make_headers())
+    #
+    #     responseJSON = json.loads(response.data.decode())
+    #
+    #     self.assertEqual(response.status_code, 200)
+    #     assert 'application/json' in response.content_type
+    #     assert 'New Trip' in responseJSON["name"]
 
-        postResponseJSON = json.loads(response.data.decode())
-        postedObjectID = postResponseJSON["_id"]
-
-        get_response = self.app.get('/trips/'+postedObjectID)
-        responseJSON = json.loads(response.data.decode())
-
-        self.assertEqual(get_response.status_code, 200)
-        assert 'application/json' in response.content_type
-        assert 'Trip to SF' in responseJSON["name"]
+    # def test_get_trip(self):
+    #     response = self.app.post('/users/', data=json.dumps(dict(
+    #                              name="ryankim", password="12341234")),
+    #                              content_type='application/json')
+    #
+    #     response2 = self.app.post('/trips/', data=json.dumps(dict(
+    #                               name="Trip to SF",
+    #                               waypoints=["Los Angeles, SF"])),
+    #                               headers=make_headers())
+    #
+    #     postResponseJSON = json.loads(response2.data.decode())
+    #     postedObjectID = postResponseJSON["_id"]
+    #
+    #     get_response = self.app.get('/trips/'+postedObjectID,
+    #                                 headers=make_headers())
+    #     responseJSON = json.loads(response.data.decode())
+    #
+    #     self.assertEqual(get_response.status_code, 200)
+    #     assert 'application/json' in response.content_type
+    #     assert 'Trip to SF' in responseJSON["name"]
 
     # def test_getting_all_trips(self):
-
-
-
+    #     response1 = self.app.post('/trips/', data=json.dumps(dict(
+    #                               name="Trip to SF",
+    #                               waypoints=["Los Angeles, SF"])),
+    #                               headers=make_headers())
+    #
+    #     response2 = self.app.post('/trips/', data=json.dumps(dict(
+    #                               name="Trip to SF",
+    #                               waypoints=["Los Angeles, SF"])),
+    #                               headers=make_headers())
+    #
+    #
 
     # [Ben-G] This test is a duplicate of test above
     # def test_getting_non_existent_trip(self):
     #     response = self.app.get('/trips/55f0cbb4236f44b7f0e3cb23')
     #     self.assertEqual(response.status_code, 404)
 
-    def test_post_trip(self):
-        response = self.app.post('/trips/',
-                                 data=json.dumps(dict(name="New Trip")),
-                                 headers=make_headers())
-
-        responseJSON = json.loads(response.data.decode())
-
-        self.assertEqual(response.status_code, 200)
-        assert 'application/json' in response.content_type
-        assert 'New Trip' in responseJSON["name"]
-
-    def test_put_trip(self):
-        response = self.app.post('/trips/', data=json.dumps(dict(
-                                 name="Trip to SF", waypoint=["LA", "SJ"])),
-                                 headers=make_headers())
-
-        postResponseJSON = json.loads(response.data.decode())
-        postedObjectID = postResponseJSON["_id"]
-
-        response = self.app.put('/trips/'+postedObjectID, data=json.dumps(dict(
-                                name="Trip to Seattle",
-                                waypoint=["San Jose", "Oregon"])),
-                                content_type='application/json')
-        responseJSON = json.loads(response.data.decode())
-
-        self.assertEqual(response.status_code, 200)
-        assert 'application/json' in response.content_type
-        assert 'Trip to Seattle' in responseJSON["name"]
-
-    def test_delete_trip(self):
-        response = self.app.post('/trips/', data=json.dumps(dict(
-                                 name="Trip to SF")),
-                                 headers=make_headers())
-
-        postResponseJSON = json.loads(response.data.decode())
-        postedObjectID = postResponseJSON["_id"]
-
-        delete_response = self.app.delete('/trips/'+postedObjectID)
-
-        self.assertEqual(delete_response.status_code, 200)
-        assert 'application/json' in response.content_type
+    # def test_put_trip(self):
+    #     response = self.app.post('/trips/', data=json.dumps(dict(
+    #                              name="Trip to SF", waypoints=["LA", "SJ"])),
+    #                              headers=make_headers())
+    #
+    #     postResponseJSON = json.loads(response.data.decode())
+    #     postedObjectID = postResponseJSON["_id"]
+    #
+    #     response = self.app.put('/trips/'+postedObjectID, data=json.dumps(dict(
+    #                             name="Trip to Seattle",
+    #                             waypoints=["San Jose", "Oregon"])),
+    #                             headers=make_headers())
+    #     responseJSON = json.loads(response.data.decode())
+    #
+    #     self.assertEqual(response.status_code, 200)
+    #     assert 'application/json' in response.content_type
+    #     assert 'Trip to Seattle' in responseJSON["name"]
+    #
+    # def test_delete_trip(self):
+    #     response = self.app.post('/trips/', data=json.dumps(dict(
+    #                              name="Trip to SF",
+    #                              waypoints=["LA", "SJ"])),
+    #                              headers=make_headers())
+    #
+    #     postResponseJSON = json.loads(response.data.decode())
+    #     assert "_id" in postResponseJSON
+    #     postedObjectID = postResponseJSON["_id"]
+    #
+    #     delete_response = self.app.delete('/trips/'+postedObjectID,
+    #                                       headers=make_headers())
+    #
+    #     self.assertEqual(delete_response.status_code, 200)
+    #     assert 'application/json' in response.content_type
 
 if __name__ == '__main__':
     unittest.main()

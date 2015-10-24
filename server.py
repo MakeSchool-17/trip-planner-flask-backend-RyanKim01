@@ -3,6 +3,7 @@ from flask_restful import Resource, Api
 from pymongo import MongoClient
 from functools import wraps
 import bcrypt
+import base64
 from bson.objectid import ObjectId
 from utils.mongo_json_encoder import JSONEncoder
 
@@ -16,20 +17,27 @@ app.bcrypt_rounds = 12
 
 
 def check_auth(username, password):
-    user_collection = app.db.myobjects
-    user = user_collection.find_one({"username": username})
+    user_collection = app.db.users
+    # import pdb; pdb.set_trace()
+    user = user_collection.find_one({"name": username})
     if user is None:
         return False
-    stored_pw = user["password"]
+
+    stored_pw = user["password"].encode("utf-8")
     encoded_pw = password.encode("utf-8")
     hashed_pw = bcrypt.hashpw(encoded_pw, stored_pw)
-    return stored_pw == hashed_pw
+    if stored_pw == hashed_pw:
+        return True
+    else:
+        return False
 
 
 def requires_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         auth = request.authorization
+        # print("auth", auth)
+
         if not auth or not check_auth(auth.username, auth.password):
             message = {'error': 'Basic Auth Required.'}
             resp = jsonify(message)
@@ -44,6 +52,7 @@ class User(Resource):
 
     def post(self):
         new_user = request.json
+        print(new_user)
         user_collection = app.db.users
         # user = user_collection.find_one({"name": new_user["name"]})
         # if user is None:
@@ -51,6 +60,7 @@ class User(Resource):
         hashed_pw = bcrypt.hashpw(encoded_pw,
                                   bcrypt.gensalt(app.bcrypt_rounds))
         new_user["password"] = hashed_pw
+
         result = user_collection.insert_one(new_user)
         user = user_collection.find_one({"_id":
                                         ObjectId(result.inserted_id)})
@@ -71,7 +81,7 @@ class User(Resource):
 
 # Trip architecture
 class Trip(Resource):
-
+    @requires_auth
     def post(self):
         new_trip = request.json
         trip_collection = app.db.trips
@@ -82,7 +92,7 @@ class Trip(Resource):
 
     # [Ben-G] You still need to implement the "get all trips" functionality.
     # All trips should be returned when /trips/ is called
-    # @requires_auth
+    @requires_auth
     def get(self, trip_id):
         trip_collection = app.db.trips
         trip = trip_collection.find_one({"_id": ObjectId(trip_id)})
@@ -93,6 +103,7 @@ class Trip(Resource):
         else:
             return trip
 
+    @requires_auth
     def get_all_trips_for_specific_users(self):
         trip_collection = app.db.trips
         user_collection = app.db.users
