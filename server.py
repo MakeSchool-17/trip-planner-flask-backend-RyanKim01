@@ -17,27 +17,25 @@ app.bcrypt_rounds = 12
 
 
 def check_auth(username, password):
+    return True
     user_collection = app.db.users
-    # import pdb; pdb.set_trace()
     user = user_collection.find_one({"name": username})
     if user is None:
         return False
-
-    stored_pw = user["password"].encode("utf-8")
-    encoded_pw = password.encode("utf-8")
-    hashed_pw = bcrypt.hashpw(encoded_pw, stored_pw)
-    if stored_pw == hashed_pw:
-        return True
     else:
-        return False
+        stored_pw = user["password"].encode("utf-8")
+        encoded_pw = password.encode("utf-8")
+        hashed_pw = bcrypt.hashpw(encoded_pw, stored_pw)
+        if hashed_pw == stored_pw:
+            return True
+        else:
+            return False
 
 
 def requires_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         auth = request.authorization
-        # print("auth", auth)
-
         if not auth or not check_auth(auth.username, auth.password):
             message = {'error': 'Basic Auth Required.'}
             resp = jsonify(message)
@@ -52,15 +50,17 @@ class User(Resource):
 
     def post(self):
         new_user = request.json
-        print(new_user)
+        if new_user["name"] is None or new_user["password"] is None:
+            return False
         user_collection = app.db.users
-        # user = user_collection.find_one({"name": new_user["name"]})
-        # if user is None:
+        user = user_collection.find_one({"name": new_user["name"]})
+        if user is not None:
+            return ({"error": "This name already exists"}, 400, None)
+
         encoded_pw = new_user["password"].encode('utf-8')
         hashed_pw = bcrypt.hashpw(encoded_pw,
                                   bcrypt.gensalt(app.bcrypt_rounds))
         new_user["password"] = hashed_pw
-
         result = user_collection.insert_one(new_user)
         user = user_collection.find_one({"_id":
                                         ObjectId(result.inserted_id)})
@@ -68,6 +68,7 @@ class User(Resource):
         del user["password"]
         return user
 
+    @requires_auth
     def get(self, user_id):
         user_collection = app.db.users
         user = user_collection.find_one({"_id": ObjectId(user_id)})
@@ -76,6 +77,7 @@ class User(Resource):
             response.status_code = 404
             return response
         else:
+            del user['password']
             return user
 
 
@@ -93,15 +95,20 @@ class Trip(Resource):
     # [Ben-G] You still need to implement the "get all trips" functionality.
     # All trips should be returned when /trips/ is called
     @requires_auth
-    def get(self, trip_id):
-        trip_collection = app.db.trips
-        trip = trip_collection.find_one({"_id": ObjectId(trip_id)})
-        if trip is None:
-            response = jsonify(data=trip)
-            response.status_code = 404
-            return response
+    def get(self, trip_id=None):
+        if trip_id is None:
+            trip_collection = app.db.trips
+            multiple_trips = list(trip_collection.find({"name": request.authorization.username}))
+            return multiple_trips
         else:
-            return trip
+            trip_collection = app.db.trips
+            trip = trip_collection.find_one({"_id": ObjectId(trip_id)}, {"user": request.authorization.username})
+            if trip is None:
+                response = jsonify(data=trip)
+                response.status_code = 404
+                return response
+            else:
+                return trip
 
     @requires_auth
     def get_all_trips_for_specific_users(self):
@@ -141,36 +148,10 @@ class Trip(Resource):
         trip_collection = app.db.trips
         # which function should I use to set/update the trip
 
-        result = trip_collection.update_one({"_id": ObjectId(trip_id)},
-                                            {'$set': updated_trip})
+        trip_collection.update_one({"_id": ObjectId(trip_id)},
+                                   {'$set': updated_trip})
         check_trip = trip_collection.find_one({"_id": ObjectId(trip_id)})
         return check_trip
-
-
-# User architecture
-class User(Resource):
-    def post(self):
-        new_user = request.json
-        user_collection = app.db.users
-        encoded_pw = new_user["password"].encode("utf-8")
-        hashed_pw = bcrypt.hashpw(encoded_pw, bcrypt.gensalt())
-        result = user_collection.insert_one(new_user)
-        user = user_collection.find_one({"_id": ObjectId(result.inserted_id)})
-        # if bcrypt.hashpw(responseJSON["password"], hashed_pw) == hashed_pw:
-        #     return true
-
-        return user
-
-    @requires_auth
-    def get(self, myobject_id):
-        user_collection = app.db.myobjects
-        myobject = user_collection.find_one({"_id": ObjectId(myobject_id)})
-        if myobject is None:
-            response = jsonify(data=myobject)
-            response.status_code = 404
-            return response
-        else:
-            return myobject
 
 
 # Add REST resource to API
