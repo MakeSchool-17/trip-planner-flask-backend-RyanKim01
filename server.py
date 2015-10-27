@@ -86,6 +86,7 @@ class Trip(Resource):
     @requires_auth
     def post(self):
         new_trip = request.json
+        new_trip["username"] = request.authorization.username
         trip_collection = app.db.trips
         result = trip_collection.insert_one(new_trip)
         posted_trip = trip_collection.find_one({"_id":
@@ -98,7 +99,7 @@ class Trip(Resource):
     def get(self, trip_id=None):
         if trip_id is None:
             trip_collection = app.db.trips
-            multiple_trips = list(trip_collection.find({"name": request.authorization.username}))
+            multiple_trips = list(trip_collection.find({"username": request.authorization.username}))
             return multiple_trips
         else:
             trip_collection = app.db.trips
