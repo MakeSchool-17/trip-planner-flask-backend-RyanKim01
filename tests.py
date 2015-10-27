@@ -141,21 +141,21 @@ class FlaskrTestCase(unittest.TestCase):
     #     assert 'application/json' in response.content_type
     #     assert 'Trip to Seattle' in responseJSON["name"]
     #
-    # def test_delete_trip(self):
-    #     response = self.app.post('/trips/', data=json.dumps(dict(
-    #                              name="Trip to SF",
-    #                              waypoints=["LA", "SJ"])),
-    #                              headers=make_headers())
-    #
-    #     postResponseJSON = json.loads(response.data.decode())
-    #     assert "_id" in postResponseJSON
-    #     postedObjectID = postResponseJSON["_id"]
-    #
-    #     delete_response = self.app.delete('/trips/'+postedObjectID,
-    #                                       headers=make_headers())
-    #
-    #     self.assertEqual(delete_response.status_code, 200)
-    #     assert 'application/json' in response.content_type
+    def test_delete_trip(self):
+        response = self.app.post('/trips/', data=json.dumps(dict(
+                                 name="Trip to SF",
+                                 waypoints=["LA", "SJ"])),
+                                 headers=make_headers())
+
+        postResponseJSON = json.loads(response.data.decode())
+        assert "_id" in postResponseJSON
+        postedObjectID = postResponseJSON["_id"]
+
+        delete_response = self.app.delete('/trips/'+postedObjectID,
+                                          headers=make_headers())
+
+        self.assertEqual(delete_response.status_code, 200)
+        assert 'application/json' in response.content_type
 
 if __name__ == '__main__':
     unittest.main()

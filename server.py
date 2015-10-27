@@ -103,7 +103,7 @@ class Trip(Resource):
             return multiple_trips
         else:
             trip_collection = app.db.trips
-            trip = trip_collection.find_one({"_id": ObjectId(trip_id)}, {"user": request.authorization.username})
+            trip = trip_collection.find_one({"_id": ObjectId(trip_id)}, {"username": request.authorization.username})
             if trip is None:
                 response = jsonify(data=trip)
                 response.status_code = 404
@@ -111,32 +111,33 @@ class Trip(Resource):
             else:
                 return trip
 
-    @requires_auth
-    def get_all_trips_for_specific_users(self):
-        trip_collection = app.db.trips
-        user_collection = app.db.users
-        # get username from authorization header
-        username = request.headers.get('Authorization').username
-        # find user object from db with that username
-        user = user_collection.find_one({"username": username})
-        # get user's id
-        user_id = user['_id']
-        # look up trips associated with that user id
-        trips = trip_collection.find({"_id": ObjectId(user_id)})
-        if trips is None:
-            response = jsonify(data=trips)
-            response.status_code = 404
-            return response
-        else:
-            return trips
+    # @requires_auth
+    # def get_all_trips_for_specific_users(self):
+    #     trip_collection = app.db.trips
+    #     user_collection = app.db.users
+    #     # get username from authorization header
+    #     username = request.headers.get('Authorization').username
+    #     # find user object from db with that username
+    #     user = user_collection.find_one({"username": username})
+    #     # get user's id
+    #     user_id = user['_id']
+    #     # look up trips associated with that user id
+    #     trips = trip_collection.find({"_id": ObjectId(user_id)})
+    #     if trips is None:
+    #         response = jsonify(data=trips)
+    #         response.status_code = 404
+    #         return response
+    #     else:
+    #         return trips
 
     # [Ben-G] Instead of refetching the trip, you can use the
     # result from `delete_one` to verify that the deletion was
     # successful
+    @requires_auth
     def delete(self, trip_id):
         trip_collection = app.db.trips
-        trip_collection.delete_one({"_id": ObjectId(trip_id)})
-        deleted_trip = trip_collection.find_one({"_id": ObjectId(trip_id)})
+        trip_collection.delete_one({"_id": ObjectId(trip_id), "username": request.authorization.username})
+        deleted_trip = trip_collection.find_one({"_id": ObjectId(trip_id), "username": request.authorization.username})
         if deleted_trip is not None:
             response = jsonify(data=deleted_trip)
             response.status_code = 404
