@@ -3,7 +3,6 @@ from flask_restful import Resource, Api
 from pymongo import MongoClient
 from functools import wraps
 import bcrypt
-import base64
 from bson.objectid import ObjectId
 from utils.mongo_json_encoder import JSONEncoder
 
@@ -93,8 +92,6 @@ class Trip(Resource):
                                                 ObjectId(result.inserted_id)})
         return posted_trip
 
-    # [Ben-G] You still need to implement the "get all trips" functionality.
-    # All trips should be returned when /trips/ is called
     @requires_auth
     def get(self, trip_id=None):
         if trip_id is None:
@@ -136,21 +133,23 @@ class Trip(Resource):
     @requires_auth
     def delete(self, trip_id):
         trip_collection = app.db.trips
-        trip_collection.delete_one({"_id": ObjectId(trip_id), "username": request.authorization.username})
+        delete_result = trip_collection.delete_one({"_id": ObjectId(trip_id), "username": request.authorization.username})
         deleted_trip = trip_collection.find_one({"_id": ObjectId(trip_id), "username": request.authorization.username})
-        if deleted_trip is not None:
+        if delete_result.deleted_count is 0:
             response = jsonify(data=deleted_trip)
             response.status_code = 404
             return response
         else:
             return deleted_trip
 
+    @requires_auth
     def put(self, trip_id):
         updated_trip = request.json
+        updated_trip["username"] = request.authorization.username
         trip_collection = app.db.trips
-        # which function should I use to set/update the trip
-
-        trip_collection.update_one({"_id": ObjectId(trip_id)},
+        del updated_trip['_id']
+        trip_collection.update_one({"_id": ObjectId(trip_id),
+                                   "username": request.authorization.username},
                                    {'$set': updated_trip})
         check_trip = trip_collection.find_one({"_id": ObjectId(trip_id)})
         return check_trip
